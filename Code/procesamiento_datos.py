@@ -45,7 +45,7 @@ def procesar_datos():
 
     cols = [
         "latitude", "longitude",
-        "d.bh", "h.t", "m.so", "m.st",
+        "d.bh", "h.t", "m.so", "m.st", "r.st",
         "speciesMatched", "vegetation"
     ]
 
@@ -60,6 +60,7 @@ def procesar_datos():
         "m.st": "m_st",
         "speciesMatched": "especie",
         "vegetation": "tipo_bosque",
+        "r.st": "densidad"
     })
 
 

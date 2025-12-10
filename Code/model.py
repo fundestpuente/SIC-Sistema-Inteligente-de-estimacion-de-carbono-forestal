@@ -43,5 +43,5 @@ importances = pd.DataFrame({
 }).sort_values(by='Importancia', ascending=False)
 
 print("R2 = ", r2_rf)
-print("Mean absoluto error =", mae_rf)
+print("Mean absolute error =", mae_rf)
 print(importances)
