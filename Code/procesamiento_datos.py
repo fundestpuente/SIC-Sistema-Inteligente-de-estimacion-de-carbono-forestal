@@ -2,94 +2,107 @@ import pandas as pd
 import rasterio
 import os
 import numpy as np
+from pathlib import Path
 
-#Definir nombres
+# ====================== CONFIGURACIÓN ======================
 rdata = "baad_data.csv"
-carpeta_clima = "climate_data" 
 archivo_output = "data_entrenamiento.csv"
 
-def obtener_clima(lat,lon):
-  """
-  Función para extraer temperatura y precipitación 
-  de los mapas .tif a partir de coordenadas.
-  """
-  try:
-    #Rutas relativas
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    path_temp = os.path.join(base_dir, carpeta_clima, "T__annual_mean")
-    path_prec = os.path.join(base_dir, carpeta_clima, "P__annual_mean")
+# RUTAS EXACTAS
+TIF_TEMP = os.path.join("climate_data", "T_annual_mean.tif")
+TIF_PREC = os.path.join("climate_data", "P_annual_mean.tif")
 
-    #Extraer temperatura
-    with rasterio.open(path_temp) as src:
-     val_t = list(src.sample([(lon, lat)]))[0][0]
-      
-    #Extraer precipitación
-    with rasterio.open(path_prec) as src:
-      val_p = list(src.sample([(lon, lat)]))[0][0]
-    return val_t, val_p
-  except:
-    return np.nan, np.nan #Si falla (e.g coordenadas en el mar), devuelve nan
 
+# ====================== FUNCIÓN CLIMA ======================
+def obtener_clima(lat, lon):
+    try:
+        if not Path(TIF_TEMP).exists():
+            raise FileNotFoundError(f"No encontrado: {TIF_TEMP}")
+        if not Path(TIF_PREC).exists():
+            raise FileNotFoundError(f"No encontrado: {TIF_PREC}")
+
+        with rasterio.open(TIF_TEMP) as src:
+            val_t = next(src.sample([(lon, lat)]))[0]
+        with rasterio.open(TIF_PREC) as src:
+            val_p = next(src.sample([(lon, lat)]))[0]
+
+        # Limpieza de NoData
+        if val_t in [-9999, -3.4e+38, 65535, None] or np.isnan(val_t):
+            val_t = np.nan
+        if val_p in [-9999, -3.4e+38, 65535, None] or np.isnan(val_p):
+            val_p = np.nan
+
+        return float(val_t), float(val_p)
+
+    except Exception as e:
+        print(f"Error clima ({lat:.2f}, {lon:.2f}): {e}")
+        return np.nan, np.nan
+
+
+# ====================== PROCESAMIENTO ======================
 def procesar_datos():
-  print("Cargando base de datos BAAD")
-  #Cargar solo las columnas útiles
-  #Todas las unidades son kg; kg/m**3, m 
-  cols = [
-    "latitude", 
-    "longitude",
-    "d.bh",           #Diámetro a la altura del pecho (DAP)
-    "h.t",            #Altura desde el suelo hasta la hoja más alta
-    "m.so",           #Toda la Biomasa sobre el nivel de tierra (AGB)
-    "d.st",           #densidad de la madera
-    "speciesMatched", #Especies corregidas 
-    "vegetation"      #Tipo de bosque
-  ]
-  
-  df = pd.read_csv(rdata, usecols=cols)
-  #Renombrar columnas
-  df = df.rename(columns={
-    "Latitude": "latitud",
-    "Longitude": "longitud",
-    "d.bh": "DAP",
-    "h.t": "altura",
-    "m.so": "biomasa_",
-    "d.st": "densidad_madera",
-    "speciesMatched": "especie",
-    "vegetation": "tipo_bosque"
-  })
-  
-  print("Tamaño original del dataset: ", df.size)
-  print("Limpieza inicial")
-  df_limpio = df_limpio.dropna(subset=["DAP", "altura"])
+    print("Cargando BAAD...")
 
-  #filtrar valores ilógicos (negativos o ceros)
-  df_limpio = df_limpio[(df_limpio["altura"] > 0) & (df_limpio["DAP"] > 0)]
+    cols = [
+        "latitude", "longitude",
+        "d.bh", "h.t", "m.so", "m.st",
+        "speciesMatched", "vegetation"
+    ]
 
-  con_densidad = df["densidad_madera"].notna().sum()
-  print("Filas con densidad disponible: {con_densidad} de {len(df)}")
-  print("Datos tras limpieza: {len(df)} filas")
-  print("Añadir datos climáticos (Worldclim)")
+    df = pd.read_csv(rdata, usecols=cols)
 
-  temperatura = []
-  precipitacion = []
+    df = df.rename(columns={
+        "latitude": "latitud",
+        "longitude": "longitud",
+        "d.bh": "DAP",
+        "h.t": "altura",
+        "m.so": "biomasa_",
+        "m.st": "m_st",
+        "speciesMatched": "especie",
+        "vegetation": "tipo_bosque"
+    })
 
-  for index, row in df.iterrows():
-    t, p = obtener_clima(row["latitud"], row["longitud"])
-    temperatura.append(t)
-    precipitacion.append(p)
+    print(f"Tamaño original: {len(df)} filas")
 
-  df_limpio["temperatura"] = temperatura
-  df_limpio["precipitacion"] = precipitacion
+    # ========= LIMPIEZA =========
+    df_limpio = df.dropna(subset=["DAP", "altura"])
+    df_limpio = df_limpio[(df_limpio["DAP"] > 0) & (df_limpio["altura"] > 0)]
 
-  #Eliminar filas sin clima
-  df_limpio = df_limpio[(df_limpio["temperatura"] > -100) & (df_limpio["precipitacion"] >= 0)]
-  df_limpio = df_limpio.dropna(subset=["temperatura", "precipitaciones"])
-  
-  print("Datos restantes", len(df))
-  df.to_csv(archivo_output, index=False)
-  print("Archivo final generado. ", archivo_output)
-  print(df.head())
+    print(f"Tras limpieza DAP/altura: {len(df_limpio)} filas")
+    print(f"Filas con m.st (biomasa tronco): {df_limpio['m_st'].notna().sum()}")
 
-  if __name__ == "__main__":
+    # ========= AÑADIR CLIMA =========
+    print("Extrayendo datos climáticos (puede tardar 3-10 minutos)...")
+    temps = []
+    precs = []
+    for idx, row in df_limpio.iterrows():
+        if idx % 1000 == 0:
+            print(f"   → Procesado {idx}/{len(df_limpio)}")
+        t, p = obtener_clima(row["latitud"], row["longitud"])
+        temps.append(t)
+        precs.append(p)
+
+    df_limpio = df_limpio.copy()
+    df_limpio["temperatura"] = temps
+    df_limpio["precipitacion"] = precs
+
+    # Filtrar valores climáticos válidos
+    antes = len(df_limpio)
+    df_limpio = df_limpio.dropna(subset=["temperatura", "precipitacion"])
+    df_limpio = df_limpio[(df_limpio["temperatura"] > -50) & (df_limpio["precipitacion"] >= 0)]
+    print(f"Datos climáticos válidos: {len(df_limpio)} filas (eliminados: {antes - len(df_limpio)})")
+
+    # ========= GUARDAR =========
+    df_limpio.to_csv(archivo_output, index=False)
+    print(f"\n¡ÉXITO TOTAL! Archivo generado:")
+    print(f"→ {os.path.abspath(archivo_output)}")
+    print(f"→ Filas finales: {len(df_limpio)}")
+    print("\nPrimeras filas del resultado:")
+    print(df_limpio.head())
+
+    return df_limpio
+
+
+# ====================== EJECUCIÓN ======================
+if __name__ == "__main__":
     procesar_datos()
-        
