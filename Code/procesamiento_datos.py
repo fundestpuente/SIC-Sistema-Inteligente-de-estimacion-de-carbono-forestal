@@ -5,12 +5,12 @@ import numpy as np
 from pathlib import Path
 
 # ====================== CONFIGURACIÓN ======================
-rdata = "baad_data.csv"
+rdata = "../climate_data/baad_data.csv"
 archivo_output = "data_entrenamiento.csv"
 
 # RUTAS EXACTAS
-TIF_TEMP = os.path.join("climate_data", "T_annual_mean.tif")
-TIF_PREC = os.path.join("climate_data", "P_annual_mean.tif")
+TIF_TEMP = "../climate_data/T_annual_mean.tif" #os.path.join("climate_data", "T_annual_mean.tif")
+TIF_PREC = "../climate_data/P_annual_mean.tif" #os.path.join("climate_data", "P_annual_mean.tif")
 
 
 # ====================== FUNCIÓN CLIMA ======================
@@ -56,17 +56,20 @@ def procesar_datos():
         "longitude": "longitud",
         "d.bh": "DAP",
         "h.t": "altura",
-        "m.so": "biomasa_",
+        "m.so": "biomasa",
         "m.st": "m_st",
         "speciesMatched": "especie",
-        "vegetation": "tipo_bosque"
+        "vegetation": "tipo_bosque",
     })
+
 
     print(f"Tamaño original: {len(df)} filas")
 
     # ========= LIMPIEZA =========
-    df_limpio = df.dropna(subset=["DAP", "altura"])
+    df_limpio = df.dropna()
     df_limpio = df_limpio[(df_limpio["DAP"] > 0) & (df_limpio["altura"] > 0)]
+
+    df["captura_carbono"] = 0.5 * (df["biomasa"]) # Se asume como factor 0.5
 
     print(f"Tras limpieza DAP/altura: {len(df_limpio)} filas")
     print(f"Filas con m.st (biomasa tronco): {df_limpio['m_st'].notna().sum()}")
