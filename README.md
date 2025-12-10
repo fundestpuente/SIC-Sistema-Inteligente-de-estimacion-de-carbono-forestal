@@ -1,6 +1,19 @@
 # TreeVal
+# 📌 <SIC-Sistema-Inteligente-de-Estimacion-de-Carbono-Forestal>
 
-## SIC-Sistema-Inteligente-de-Estimacion-de-Carbono-Forestal
+**Curso:** Samsung Innovation Campus – Módulo de Python (Ecuador 2025)  
+**Seccion:** 'ecuador03'
+**Carpeta:** `/<ecuador03>/<SIC-Sistema-Inteligente-de-Estimacion-de-Carbono-Forestal>`
+
+---
+
+## 👥 Integrantes del Grupo
+- Ayman El Salous
+- Krister Figueroa
+- Steve Robinson
+- Diego Campos
+
+## Resumen
 
 El sistema propuesto busca implementar una mejora en los estudios de captura de carbono forestal al aplicar un modelo de machine learning para estimar la
 biomasa aérea de árboles, y reemplazar las ecuaciones alométricas comúnmente empleadas en este tipo de estudios.
@@ -29,6 +42,32 @@ Este proceso es lento, costoso y susceptible a errores humanos, especialmente cu
 ## Resultado del proyecto
 El proyecto logró integrar un sistema capaz de recibir datos de inventarios forestales, validar y procesar la información ingresada por el usuario, y aplicar un modelo predictivo basado en Random Forest para estimar variables clave relacionadas al carbono forestal.  
 La herramienta demuestra que es posible automatizar parte del proceso técnico involucrado en estudios de captura de carbono, facilitando el análisis incluso cuando existen datos faltantes (como la altura). Esto abre la puerta a procesos más ágiles, accesibles y confiables para la evaluación del recurso forestal utilizando inteligencia artificial.
+
+## ⚙️ Instrucciones de Instalación y Ejecución
+
+### Requisitos
+- Python 3.9+ (recomendado)
+- Git
+
+### Pasos
+1. Clonar el repositorio (o asegurarse de estar en la carpeta del proyecto):
+   ```bash
+   git clone <https://github.com/fundestpuente/SIC-Sistema-Inteligente-de-Estimacion-de-Carbono-Forestal>
+   cd SIC-Sistema-Inteligente-de-Estimacion-de-Carbono-Forestal  
+   ```
+
+2. Actualizar pip e instalar dependencias:
+   ```bash
+   pip install --upgrade pip
+   pip install streamlit
+   pip install -r requirements.txt
+   ```
+
+3. Ejecutar la aplicación (ejemplo):
+   ```bash
+   streamlit run app.py
+
+---
 
 
 La data se consiguió en el [siguiente repositorio](https://github.com/dfalster/baad/blob/master/data/Garber2005/data.csv)
