@@ -1,10 +1,8 @@
 import pandas as pd
+import json
 
 def validar_diametro(uploaded_file, otro=None):
-    """
-    Verifica que el archivo subido tenga una columna válida de diámetros.
-    Se aceptan .csv o .xlsx con una columna llamada 'diametro' o 'dbh'.
-    """
+    #verifica la existencia de la columna diametro
 
     if uploaded_file is None:
         return None, "No se cargó ningún archivo."
@@ -21,7 +19,6 @@ def validar_diametro(uploaded_file, otro=None):
             return None, "Formato no soportado. Sube un archivo .csv o .xlsx"
     except Exception as e:
         return None, f"Error leyendo el archivo: {e}"
-    
     
 
     # Normalizar nombres de columnas
@@ -44,3 +41,34 @@ def validar_diametro(uploaded_file, otro=None):
     df = df.rename(columns={found[0]: "d.bh"})
 
     return df, None
+
+def cargar_archivo(uploaded):
+    file_type = uploaded.name.split(".")[-1].lower()
+    #verifica el tipo de archivo
+    try:
+        if file_type == "csv":
+            return pd.read_csv(uploaded), None
+
+        elif file_type == "xlsx":
+            return pd.read_excel(uploaded), None
+
+        elif file_type == "json":
+
+            # Intentar leer JSON como lista de objetos
+            try:
+                data = json.load(uploaded)
+                if isinstance(data, dict):
+                    # Si es un dict con una lista dentro
+                    key = list(data.keys())[0]
+                    data = data[key]
+                df = pd.DataFrame(data)
+                return df, None
+
+            except Exception as e:
+                return None, f"Error al leer el archivo JSON: {e}"
+
+        else:
+            return None, "Formato de archivo no soportado."
+
+    except Exception as e:
+        return None, f"Error procesando archivo: {e}"
