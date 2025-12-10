@@ -57,8 +57,6 @@ if st.session_state["pantalla"] == "inicio":
                 # Por ahora solo guardamos df_validado
                 st.session_state["df_final"] = df_validado
                 # funcion para uso de modelo (df_cargado)
-# después de todo eso, se presenta el siguiente botón
-#este debe llevar a otra vista si se puede? para que devuelva dataset modificado y reporte
                 # Mostrar botón de ir a resultados
                 if st.button("Resultados"):
                     st.session_state["pantalla"] = "resultados"
@@ -95,20 +93,6 @@ elif st.session_state["pantalla"] == "resultados":
             file_name="carbono_procesado.csv",
             mime="text/csv"
         )
-
-
-        # DESCARGA DEL REPORTE (AÚN SIN IMPLEMENTAR)
-        # Aquí hay, tal vez:
-        # - Generación de PDF
-        # - Gráficos del dataset
-        # - Estadísticas
-        #
-        # st.download_button(
-        #     label="Descargar reporte PDF",
-        #     data=archivo_pdf,
-        #     file_name="reporte_carbono.pdf",
-        #     mime="application/pdf"
-        # )
 
         if st.button("Volver al inicio"):
             st.session_state["pantalla"] = "inicio"
