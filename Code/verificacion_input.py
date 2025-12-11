@@ -1,44 +1,48 @@
 import pandas as pd
 import json
 
-def validar_diametro(uploaded_file, otro=None):
-    #verifica la existencia de la columna diametro
+def validar_diametro(df, otro=None):
+    """
+    Verifica y estandariza la columna de diámetro en un DataFrame ya cargado.
+    Recibe un DataFrame y el nombre de columna personalizado (opcional).
+    """
 
-    if uploaded_file is None:
-        return None, "No se cargó ningún archivo."
-
-    # Determinar tipo
-    filename = uploaded_file.name.lower()
-
-    try:
-        if filename.endswith(".csv"):
-            df = pd.read_csv(uploaded_file)
-        elif filename.endswith(".xlsx"):
-            df = pd.read_excel(uploaded_file)
-        else:
-            return None, "Formato no soportado. Sube un archivo .csv o .xlsx"
-    except Exception as e:
-        return None, f"Error leyendo el archivo: {e}"
-    
-
-    # Normalizar nombres de columnas
+    # 1. Normalizar nombres de columnas del DataFrame (no del archivo subido)
     df.columns = df.columns.str.lower().str.strip()
 
-    # Verificar que exista una columna de diámetro
+    # 2. Definir nombres válidos
     valid_cols = ["diametro", "d.bh", "dap"]
-    if (otro is not None):
-        valid_cols.append(otro.lower().strip())
     
+    # 3. Incluir el nombre personalizado si fue proporcionado
+    if otro:
+        # Normalizar el nombre personalizado para la búsqueda
+        valid_cols.append(otro.lower().strip())
+
+    # 4. Buscar la columna
     found = [c for c in valid_cols if c in df.columns]
 
     if not found:
         return None, (
             "El archivo debe contener una columna llamada: "
-            "'diametro', 'd.bh' o 'dap' o el nombre personalizado que ingresaste."
+            "'diametro', 'd.bh', 'dap' o el nombre personalizado ingresado."
         )
 
-    # Renombrar a una columna estándar
-    df = df.rename(columns={found[0]: "d.bh"})
+    col_name = found[0]
+    columna_diametro = df[col_name]
+
+    # 5. Validación de tipo de datos (Añadido para robustez)
+    if not pd.api.types.is_numeric_dtype(columna_diametro):
+        # Intentar forzar la conversión si hay cadenas que parecen números (ej: "10.5")
+        try:
+            df[col_name] = pd.to_numeric(columna_diametro, errors='coerce')
+            # Eliminar filas donde la conversión falló y se convirtió en NaN
+            df.dropna(subset=[col_name], inplace=True) 
+        except Exception:
+             return None, f"La columna '{col_name}' no contiene valores numéricos válidos."
+
+
+    # 6. Renombrar a una columna estándar 'DAP'
+    df = df.rename(columns={col_name: "DAP"})
 
     return df, None
 
