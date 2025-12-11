@@ -5,12 +5,12 @@ import numpy as np
 from pathlib import Path
 
 # ====================== CONFIGURACIÓN ======================
-rdata = "climate_data/baad_data.csv"
+rdata = "../climate_data/baad_data.csv"
 archivo_output = "data_entrenamiento.csv"
 
 # RUTAS EXACTAS
-TIF_TEMP = "climate_data/T_annual_mean.tif" #os.path.join("climate_data", "T_annual_mean.tif")
-TIF_PREC = "climate_data/P_annual_mean.tif" #os.path.join("climate_data", "P_annual_mean.tif")
+TIF_TEMP = os.path.join("climate_data", "T_annual_mean.tif")
+TIF_PREC = os.path.join("climate_data", "P_annual_mean.tif")
 
 
 # ====================== FUNCIÓN CLIMA ======================
@@ -40,7 +40,7 @@ def obtener_clima(lat, lon):
 
 
 # ====================== PROCESAMIENTO ======================
-def procesar_datos():
+def procesar_datos(ruta):
     print("Cargando BAAD...")
 
     cols = [
@@ -49,7 +49,7 @@ def procesar_datos():
         "speciesMatched", "vegetation"
     ]
 
-    df = pd.read_csv(rdata, usecols=cols)
+    df = pd.read_csv(ruta, usecols=cols)
 
     df = df.rename(columns={
         "latitude": "latitud",
@@ -109,4 +109,4 @@ def procesar_datos():
 
 # ====================== EJECUCIÓN ======================
 if __name__ == "__main__":
-    procesar_datos()
+    procesar_datos(rdata)

@@ -1,8 +1,11 @@
+import os
+
 import streamlit as st
 import pandas as pd
-from Code.procesamiento_datos import procesar_datos
-from Code.verificacion_input import validar_diametro, cargar_archivo 
 
+from Code.verificacion_input import validar_diametro
+from Code.procesamiento_datos import procesar_datos
+from Code.model import modelo
 
 DEFAULT_DATASET_PATH = r"climate_data\baad_data.csv"
 
@@ -12,16 +15,17 @@ if "pantalla" not in st.session_state:
 
 if "df_final" not in st.session_state:
     st.session_state["df_final"] = None
-    
 
 if "usar_default" not in st.session_state:
     st.session_state["usar_default"] = False
 
+if "archivo" not in st.session_state:
+    st.session_state["archivo"] = ""
+
 st.set_page_config(page_title="Estimación de Carbono", layout="wide")
 
 
-
-def procesar_datosg(df_cargado, otro):
+def cargar_datos(df_cargado, otro):
     """Encapsula la validación y el manejo de errores."""
     df_validado, error = validar_diametro(df_cargado, otro)
 
@@ -40,100 +44,57 @@ def procesar_datosg(df_cargado, otro):
             st.session_state["pantalla"] = "resultados"
             st.rerun()
 
-
-
 if st.session_state["pantalla"] == "inicio":
 
     st.title("Sistema de estimación de carbono forestal")
     st.write("Sube un archivo con datos de diámetros de árboles (CSV, Excel o JSON).")
-    
-    # --- Control de Columna Personalizada ---
-    otro_nombre = st.checkbox("¿Usaste un nombre diferente para la columna de diámetro?")
-    otro = None
+    st.code("datos que debe tener el dataset")
 
-    if otro_nombre:
-        otro = st.text_input("Escribe el nombre EXACTO de la columna personalizada:")
+    existing_files = [f for f in os.listdir("climate_data") if f.endswith((".csv", ".xlsx"))]
+    if existing_files:
+        st.subheader("📁 Archivos actuales en el sistema:")
+        selected_file = st.selectbox("Selecciona un archivo existente:", existing_files)
+        st.session_state["archivo"] =  os.path.join("climate_data", selected_file)
 
-        if otro:
-            if otro.isnumeric():
-                st.error("El nombre de la columna no puede ser un número.")
-                otro = None
-            elif not isinstance(otro, str):
-                st.error("El nombre debe ser texto válido.")
-                otro = None
+        if st.button("🗑️ Eliminar archivo seleccionado"):
+            os.remove(os.path.join("climate_data", selected_file))
+            st.success(f"Archivo '{selected_file}' eliminado correctamente.")
+            st.session_state["archivo"] = ""
+            st.experimental_rerun()
 
-  
-    col1, col2 = st.columns([1, 1])
+    st.divider()
 
-    with col1:
-        uploaded_file = st.file_uploader(
-            "Carga tu archivo con los datos",
-            type=["csv", "xlsx", "json"]
-        )
+    uploaded_file = st.file_uploader("Selecciona un nuevo archivo", type=["csv", "xlsx"])
 
-    with col2:
-        # Nuevo Botón para cargar el dataset por defecto
-        st.write("---") # Espaciador
-        if st.button(f"Usar Dataset por Defecto: {DEFAULT_DATASET_PATH}"):
-            # Al hacer clic, forzamos el estado a usar el default y volvemos a ejecutar
-            st.session_state["usar_default"] = True
-            st.rerun() 
-            
-   
-
-    df_cargado = None
-    
-    if uploaded_file is not None:
-        st.session_state["usar_default"] = False # Desactivar la carga default si se sube un archivo
-        
-        df_cargado, error_carga = cargar_archivo(uploaded_file)
-        
-        if error_carga:
-            st.error(error_carga)
-            st.stop()
-        
-        # Procesar los datos cargados
-        procesar_datosg(df_cargado, otro)
-
-
-    elif st.session_state["usar_default"]:
-        st.info(f"Procesando dataset por defecto: **{DEFAULT_DATASET_PATH}**. Esto puede tardar varios minutos...")
-        
+    if uploaded_file:
         try:
-            df_final_procesado = procesar_datos()
-            
-            st.success("¡Procesamiento del dataset por defecto finalizado!")
-            st.subheader("Vista previa del resultado:")
-            st.dataframe(df_final_procesado.head())
-            
+            if uploaded_file.name.endswith(".csv"):
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_excel(uploaded_file, engine="openpyxl")
+                print(df)
 
-            st.session_state["df_final"] = df_final_procesado
-            
-            if st.button("Ver Resultados Completos"):
-                st.session_state["pantalla"] = "resultados"
-                st.rerun()
-            
-        except FileNotFoundError:
-            st.error(f"Error: No se encontró el archivo por defecto en la ruta: {DEFAULT_DATASET_PATH}")
-            st.session_state["usar_default"] = False # Resetear
-            
+            st.success(f"✅ Archivo '{uploaded_file.name}' cargado correctamente")
+            st.subheader("Vista previa:")
+            st.dataframe(df.head())
+
+            save_path = os.path.join("climate_data", uploaded_file.name)
+            df.to_csv(save_path.replace(".xlsx", ".csv"), index=False)
+            st.success(f"Archivo guardado en: `{save_path.replace('.xlsx', '.csv')}`")
+
         except Exception as e:
-            st.error(f"Error cargando el dataset por defecto: {e}")
-            st.session_state["usar_default"] = False # Resetear
-            
-    # 3. Estado inicial: Ningún archivo o default cargado
-    else:
-        st.info("Esperando que cargues un archivo o uses el dataset por defecto.")
-        # Asegurarse de que no haya resultados pendientes de una ejecución anterior fallida
-        st.session_state["df_final"] = None
+            st.error(f"❌ Error al leer el archivo: {e}")
 
-
+    if st.button("Ver Resultados Completos"):
+        st.session_state["pantalla"] = "resultados"
+        st.rerun()
 
 elif st.session_state["pantalla"] == "resultados":
 
     st.title("Resultados del análisis de carbono")
 
-    df_final = st.session_state["df_final"]
+    df_final = procesar_datos(st.session_state["archivo"])
+    st.session_state["df_final"] = df_final
 
     if df_final is None:
         st.error("No hay datos procesados. Regresa a la pantalla de carga.")
@@ -154,9 +115,50 @@ elif st.session_state["pantalla"] == "resultados":
             mime="text/csv"
         )
 
+        if st.button("Crear modelo de predicción"):
+            st.session_state["pantalla"] = "prediccion"
+            st.rerun()
+
         if st.button("Volver al inicio"):
             st.session_state["pantalla"] = "inicio"
             st.session_state["usar_default"] = False # Resetear estado
             st.rerun()
 
 
+elif st.session_state["pantalla"] == "prediccion":
+    st.title("Modelo de predicción de captura de carbono")
+    r2_rf, mae_rf, importances, rf = modelo(st.session_state["df_final"])
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        # min_value=0.0 asegura que sean positivos
+        dap = st.number_input("DAP (cm)", min_value=0.0, format="%.2f", value=10.0)
+
+    with col2:
+        altura = st.number_input("Altura (m)", min_value=0.0, format="%.2f", value=5.0)
+
+    with col3:
+        m_st = st.number_input("m_st", min_value=0.0, format="%.4f", value=0.5)
+
+    if st.button("Calcular Predicción", type="primary"):
+        if dap > 0 and altura > 0 and m_st > 0:
+            resultado = rf.predict([[dap, altura, m_st]]) * 0.5
+            st.success(f"La captura de carbono predicha es: **{float(resultado[0]):.4f}**")
+        else:
+            st.warning("Por favor, ingrese valores mayores a 0 para todas las variables.")
+
+    st.header("Evaluación del Modelo Random Forest")
+
+    m_col1, m_col2 = st.columns(2)
+    with m_col1:
+        st.metric(label="R² Score (Ajuste)", value=f"{r2_rf:.3f}")
+    with m_col2:
+        st.metric(label="MAE (Error Medio Absoluto)", value=f"{mae_rf:.3f}", delta_color="inverse")
+
+    st.subheader("Importancia de las Variables")
+    st.bar_chart(importances.set_index("Variable"))
+
+    # Opción alternativa: Mostrar la tabla de datos
+    with st.expander("Ver datos exactos de importancia"):
+        st.dataframe(importances)
