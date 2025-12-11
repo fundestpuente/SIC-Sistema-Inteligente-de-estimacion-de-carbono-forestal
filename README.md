@@ -60,12 +60,11 @@ La herramienta demuestra que es posible automatizar parte del proceso técnico i
    ```bash
    pip install --upgrade pip
    pip install streamlit
-   pip install -r requirements.txt
    ```
 
 3. Ejecutar la aplicación (ejemplo):
    ```bash
-   streamlit run app.py
+   streamlit run interface.py
 
 ---
 
