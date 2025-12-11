@@ -48,7 +48,7 @@ if st.session_state["pantalla"] == "inicio":
 
     st.title("Sistema de estimación de carbono forestal")
     st.write("Sube un archivo con datos de diámetros de árboles (CSV, Excel o JSON).")
-    st.code("datos que debe tener el dataset")
+    st.code("El dataset debe tener: latitud, longitud, DAP, altura, biomasa, m_st, especie, tipo_bosque, densidad")
 
     existing_files = [f for f in os.listdir("climate_data") if f.endswith((".csv", ".xlsx"))]
     if existing_files:
@@ -96,10 +96,6 @@ elif st.session_state["pantalla"] == "resultados":
     df_final = procesar_datos(st.session_state["archivo"])
     st.session_state["df_final"] = df_final
 
-    if st.button("Crear modelo de predicción"):
-        st.session_state["pantalla"] = "prediccion"
-        st.rerun()
-
     if df_final is None:
         st.error("No hay datos procesados. Regresa a la pantalla de carga.")
         if st.button("Volver"):
@@ -111,6 +107,10 @@ elif st.session_state["pantalla"] == "resultados":
         st.dataframe(df_final.head())
 
         csv_data = df_final.to_csv(index=False).encode("utf-8")
+
+        if st.button("Crear modelo de predicción"):
+            st.session_state["pantalla"] = "prediccion"
+            st.rerun()
 
         st.download_button(
             label="Descargar dataset procesado (CSV)",
