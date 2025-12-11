@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+from Code.procesamiento_datos import procesar_datos
 from Code.verificacion_input import validar_diametro, cargar_archivo 
 
 
@@ -21,7 +21,7 @@ st.set_page_config(page_title="Estimación de Carbono", layout="wide")
 
 
 
-def procesar_datos(df_cargado, otro):
+def procesar_datosg(df_cargado, otro):
     """Encapsula la validación y el manejo de errores."""
     df_validado, error = validar_diametro(df_cargado, otro)
 
@@ -93,29 +93,39 @@ if st.session_state["pantalla"] == "inicio":
             st.stop()
         
         # Procesar los datos cargados
-        procesar_datos(df_cargado, otro)
+        procesar_datosg(df_cargado, otro)
 
-    # 2. Alternativa: Cargar dataset por defecto (si el botón fue presionado)
+
     elif st.session_state["usar_default"]:
-        st.info(f"Cargando dataset por defecto: **{DEFAULT_DATASET_PATH}**")
+        st.info(f"Procesando dataset por defecto: **{DEFAULT_DATASET_PATH}**. Esto puede tardar varios minutos...")
+        
         try:
-            df_cargado = pd.read_csv(DEFAULT_DATASET_PATH)
+            df_final_procesado = procesar_datos()
             
-            # Procesar los datos cargados
-            procesar_datos(df_cargado, otro)
+            st.success("¡Procesamiento del dataset por defecto finalizado!")
+            st.subheader("Vista previa del resultado:")
+            st.dataframe(df_final_procesado.head())
+            
+
+            st.session_state["df_final"] = df_final_procesado
+            
+            if st.button("Ver Resultados Completos"):
+                st.session_state["pantalla"] = "resultados"
+                st.rerun()
             
         except FileNotFoundError:
             st.error(f"Error: No se encontró el archivo por defecto en la ruta: {DEFAULT_DATASET_PATH}")
             st.session_state["usar_default"] = False # Resetear
+            
         except Exception as e:
             st.error(f"Error cargando el dataset por defecto: {e}")
             st.session_state["usar_default"] = False # Resetear
-        
+            
     # 3. Estado inicial: Ningún archivo o default cargado
     else:
         st.info("Esperando que cargues un archivo o uses el dataset por defecto.")
         # Asegurarse de que no haya resultados pendientes de una ejecución anterior fallida
-        st.session_state["df_final"] = None 
+        st.session_state["df_final"] = None
 
 
 

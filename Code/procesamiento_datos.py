@@ -5,12 +5,12 @@ import numpy as np
 from pathlib import Path
 
 # ====================== CONFIGURACIÓN ======================
-rdata = "../climate_data/baad_data.csv"
+rdata = "climate_data/baad_data.csv"
 archivo_output = "data_entrenamiento.csv"
 
 # RUTAS EXACTAS
-TIF_TEMP = "../climate_data/T_annual_mean.tif" #os.path.join("climate_data", "T_annual_mean.tif")
-TIF_PREC = "../climate_data/P_annual_mean.tif" #os.path.join("climate_data", "P_annual_mean.tif")
+TIF_TEMP = "climate_data/T_annual_mean.tif" #os.path.join("climate_data", "T_annual_mean.tif")
+TIF_PREC = "climate_data/P_annual_mean.tif" #os.path.join("climate_data", "P_annual_mean.tif")
 
 
 # ====================== FUNCIÓN CLIMA ======================
