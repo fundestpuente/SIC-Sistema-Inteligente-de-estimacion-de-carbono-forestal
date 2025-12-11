@@ -43,6 +43,24 @@ Este proceso es lento, costoso y susceptible a errores humanos, especialmente cu
 El proyecto logró integrar un sistema capaz de recibir datos de inventarios forestales, validar y procesar la información ingresada por el usuario, y aplicar un modelo predictivo basado en Random Forest para estimar variables clave relacionadas al carbono forestal.  
 La herramienta demuestra que es posible automatizar parte del proceso técnico involucrado en estudios de captura de carbono, facilitando el análisis incluso cuando existen datos faltantes (como la altura). Esto abre la puerta a procesos más ágiles, accesibles y confiables para la evaluación del recurso forestal utilizando inteligencia artificial.
 
+## Estructura del Código 
+```
+SIC-Sistema-Inteligente-de-estimacion-de-carbono-forestal/
+├── Code
+│   ├── _init_.py
+│   ├── model.py
+│   ├── procesamiento_datos.py
+│   └── verificacion_input.py
+├── Prueba_archivos.py
+├── README.md
+├── climate_data
+│   ├── P_annual_mean.tif
+│   ├── T_annual_mean.tif
+│   └── baad_data.csv
+├── data_entrenamiento.csv
+└── interface.py
+```
+
 ## ⚙️ Instrucciones de Instalación y Ejecución
 
 ### Requisitos
