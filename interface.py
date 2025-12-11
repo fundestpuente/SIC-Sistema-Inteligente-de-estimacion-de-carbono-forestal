@@ -85,16 +85,20 @@ if st.session_state["pantalla"] == "inicio":
         except Exception as e:
             st.error(f"❌ Error al leer el archivo: {e}")
 
-    if st.button("Ver Resultados Completos"):
+    if st.button("Cargar el archivo"):
         st.session_state["pantalla"] = "resultados"
         st.rerun()
 
 elif st.session_state["pantalla"] == "resultados":
 
-    st.title("Resultados del análisis de carbono")
+    st.title("Procesamiento del dataset")
 
     df_final = procesar_datos(st.session_state["archivo"])
     st.session_state["df_final"] = df_final
+
+    if st.button("Crear modelo de predicción"):
+        st.session_state["pantalla"] = "prediccion"
+        st.rerun()
 
     if df_final is None:
         st.error("No hay datos procesados. Regresa a la pantalla de carga.")
@@ -114,10 +118,6 @@ elif st.session_state["pantalla"] == "resultados":
             file_name="carbono_procesado.csv",
             mime="text/csv"
         )
-
-        if st.button("Crear modelo de predicción"):
-            st.session_state["pantalla"] = "prediccion"
-            st.rerun()
 
         if st.button("Volver al inicio"):
             st.session_state["pantalla"] = "inicio"
@@ -162,3 +162,8 @@ elif st.session_state["pantalla"] == "prediccion":
     # Opción alternativa: Mostrar la tabla de datos
     with st.expander("Ver datos exactos de importancia"):
         st.dataframe(importances)
+    
+    if st.button("Volver al inicio"):
+        st.session_state["pantalla"] = "inicio"
+        st.session_state["usar_default"] = False # Resetear estado
+        st.rerun()
