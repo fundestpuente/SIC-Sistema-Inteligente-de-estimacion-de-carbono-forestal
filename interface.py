@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from Code.verificacion_input import validar_diametro, cargar_archivo
+
+from Code.verificacion_input import validar_diametro, cargar_archivo 
 
 
 DEFAULT_DATASET_PATH = r"climate_data\baad_data.csv"
@@ -11,16 +12,42 @@ if "pantalla" not in st.session_state:
 
 if "df_final" not in st.session_state:
     st.session_state["df_final"] = None
+    
+
+if "usar_default" not in st.session_state:
+    st.session_state["usar_default"] = False
 
 st.set_page_config(page_title="Estimación de Carbono", layout="wide")
+
+
+
+def procesar_datos(df_cargado, otro):
+    """Encapsula la validación y el manejo de errores."""
+    df_validado, error = validar_diametro(df_cargado, otro)
+
+    if error:
+        st.error(error)
+        # Opcional: limpiar el estado para evitar resultados erróneos
+        st.session_state["df_final"] = None 
+    else:
+        st.success("Archivo validado correctamente.")
+        st.subheader("Vista previa:")
+        st.dataframe(df_validado.head())
+
+        st.session_state["df_final"] = df_validado
+
+        if st.button("Resultados"):
+            st.session_state["pantalla"] = "resultados"
+            st.rerun()
+
+
 
 if st.session_state["pantalla"] == "inicio":
 
     st.title("Sistema de estimación de carbono forestal")
     st.write("Sube un archivo con datos de diámetros de árboles (CSV, Excel o JSON).")
-    st.write("Si no subes un archivo, se utilizará el dataset por defecto: **baad_data.csv**")
-
-    # Pregunta al usuario
+    
+    # --- Control de Columna Personalizada ---
     otro_nombre = st.checkbox("¿Usaste un nombre diferente para la columna de diámetro?")
     otro = None
 
@@ -35,44 +62,61 @@ if st.session_state["pantalla"] == "inicio":
                 st.error("El nombre debe ser texto válido.")
                 otro = None
 
-    # Subir archivo
-    uploaded_file = st.file_uploader(
-        "Carga el archivo con los datos",
-        type=["csv", "xlsx", "json"]
-    )
+  
+    col1, col2 = st.columns([1, 1])
 
+    with col1:
+        uploaded_file = st.file_uploader(
+            "Carga tu archivo con los datos",
+            type=["csv", "xlsx", "json"]
+        )
+
+    with col2:
+        # Nuevo Botón para cargar el dataset por defecto
+        st.write("---") # Espaciador
+        if st.button(f"Usar Dataset por Defecto: {DEFAULT_DATASET_PATH}"):
+            # Al hacer clic, forzamos el estado a usar el default y volvemos a ejecutar
+            st.session_state["usar_default"] = True
+            st.rerun() 
+            
+   
+
+    df_cargado = None
     
-    if uploaded_file is None:
-        st.info("No se subió ningún archivo. Usando dataset por defecto.")
-        try:
-            df_cargado = pd.read_csv(DEFAULT_DATASET_PATH)
-            df_validado, error = validar_diametro(df_cargado, otro)
-        except Exception as e:
-            st.error(f"Error cargando el dataset por defecto: {e}")
-            st.stop()
-    else:
+    if uploaded_file is not None:
+        st.session_state["usar_default"] = False # Desactivar la carga default si se sube un archivo
         
         df_cargado, error_carga = cargar_archivo(uploaded_file)
-
+        
         if error_carga:
             st.error(error_carga)
             st.stop()
+        
+        # Procesar los datos cargados
+        procesar_datos(df_cargado, otro)
 
-        df_validado, error = validar_diametro(df_cargado, otro)
-
-    
-    if error:
-        st.error(error)
+    # 2. Alternativa: Cargar dataset por defecto (si el botón fue presionado)
+    elif st.session_state["usar_default"]:
+        st.info(f"Cargando dataset por defecto: **{DEFAULT_DATASET_PATH}**")
+        try:
+            df_cargado = pd.read_csv(DEFAULT_DATASET_PATH)
+            
+            # Procesar los datos cargados
+            procesar_datos(df_cargado, otro)
+            
+        except FileNotFoundError:
+            st.error(f"Error: No se encontró el archivo por defecto en la ruta: {DEFAULT_DATASET_PATH}")
+            st.session_state["usar_default"] = False # Resetear
+        except Exception as e:
+            st.error(f"Error cargando el dataset por defecto: {e}")
+            st.session_state["usar_default"] = False # Resetear
+        
+    # 3. Estado inicial: Ningún archivo o default cargado
     else:
-        st.success("Archivo validado correctamente.")
-        st.subheader("Vista previa:")
-        st.dataframe(df_validado.head())
+        st.info("Esperando que cargues un archivo o uses el dataset por defecto.")
+        # Asegurarse de que no haya resultados pendientes de una ejecución anterior fallida
+        st.session_state["df_final"] = None 
 
-        st.session_state["df_final"] = df_validado
-
-        if st.button("Resultados"):
-            st.session_state["pantalla"] = "resultados"
-            st.rerun()
 
 
 elif st.session_state["pantalla"] == "resultados":
@@ -102,6 +146,7 @@ elif st.session_state["pantalla"] == "resultados":
 
         if st.button("Volver al inicio"):
             st.session_state["pantalla"] = "inicio"
+            st.session_state["usar_default"] = False # Resetear estado
             st.rerun()
 
 

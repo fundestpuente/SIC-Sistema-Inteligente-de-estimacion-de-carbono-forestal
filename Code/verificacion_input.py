@@ -2,10 +2,7 @@ import pandas as pd
 import json
 
 def validar_diametro(df, otro=None):
-    """
-    Verifica y estandariza la columna de diámetro en un DataFrame ya cargado.
-    Recibe un DataFrame y el nombre de columna personalizado (opcional).
-    """
+    
 
     # 1. Normalizar nombres de columnas del DataFrame (no del archivo subido)
     df.columns = df.columns.str.lower().str.strip()
